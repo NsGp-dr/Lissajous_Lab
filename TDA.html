@@ -1,679 +1,2323 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lissajous Synthesizer & Topological Data Analysis (TDA)</title>
-  <style>
-    :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --border-color: #334155;
-      --accent-color: #38bdf8;
-      --accent-hover: #0284c7;
-      --text-color: #f8fafc;
-      --text-dim: #94a3b8;
-      --h0-color: #38bdf8;
-      --h1-color: #34d399;
-      --h2-color: #f472b6;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
+<title>TopoLab · Huella topológica de una partitura</title>
 
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      padding: 20px;
-      min-height: 100vh;
-    }
+<style>
+:root{
+  --bg:#000;
+  --panel:#040907;
+  --fg:#a9f5d2;
+  --dim:#4f7f6c;
+  --neon:#39ff9c;
+  --gold:#ffd23f;
+  --pink:#ff6b9d;
+  --blue:#6bc7ff;
+  --line:#10382d;
+  --err:#ff5d6c;
+}
 
-    header {
-      margin-bottom: 20px;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
+*{box-sizing:border-box}
 
-    h1 {
-      font-size: 1.5rem;
-      color: var(--accent-color);
-    }
+html{
+  font-size:clamp(12px,.5vw + 4px,20px)
+}
 
-    .subtitle {
-      font-size: 0.875rem;
-      color: var(--text-dim);
-    }
+html,body{
+  margin:0;
+  height:100%;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:ui-monospace,"JetBrains Mono","Fira Code",Menlo,Consolas,monospace
+}
 
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
+body{
+  overflow:hidden
+}
 
-    @media (max-width: 1024px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+#app{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 29rem;
+  height:100vh
+}
 
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
+#stage{
+  position:relative;
+  background:#000;
+  overflow:auto;
+  min-height:0;
+  padding:1rem
+}
 
-    .card h2 {
-      font-size: 1.1rem;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+canvas{
+  display:block;
+  background:#010403;
+  border:1px solid var(--line)
+}
 
-    canvas {
-      background-color: #020617;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      width: 100%;
-      height: 280px;
-      display: block;
-    }
+#cvMain{
+  width:100%;
+  min-height:420px
+}
 
-    .controls-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 10px;
-    }
+#panel{
+  background:var(--panel);
+  border-left:1px solid var(--line);
+  overflow-y:auto;
+  padding:.8rem .9rem 2rem
+}
 
-    .control-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+h1{
+  font-size:1rem;
+  margin:0 0 .2rem;
+  color:var(--neon);
+  letter-spacing:.12em
+}
 
-    label {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+.sub{
+  color:var(--dim);
+  font-size:.72rem;
+  margin-bottom:.8rem;
+  line-height:1.5
+}
 
-    input[type="number"], input[type="range"], select {
-      background-color: #0f172a;
-      border: 1px solid var(--border-color);
-      color: var(--text-color);
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 0.875rem;
-    }
+.sec{
+  border-top:1px solid var(--line);
+  padding:.7rem 0
+}
 
-    button {
-      background-color: var(--accent-color);
-      color: #0f172a;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 4px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      font-size: 0.875rem;
-    }
+.sec h2{
+  margin:0 0 .5rem;
+  font-size:.72rem;
+  color:var(--dim);
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  font-weight:600
+}
 
-    button:hover {
-      background-color: var(--accent-hover);
-    }
+.row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.4rem;
+  margin-bottom:.4rem
+}
 
-    button.btn-secondary {
-      background-color: #334155;
-      color: var(--text-color);
-    }
+.btn{
+  background:#07130f;
+  color:var(--fg);
+  border:1px solid var(--line);
+  padding:.4rem .6rem;
+  font:inherit;
+  font-size:.78rem;
+  cursor:pointer;
+  border-radius:3px
+}
 
-    button.btn-secondary:hover {
-      background-color: #475569;
-    }
+.btn:hover{
+  border-color:var(--neon);
+  color:var(--neon)
+}
 
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+.btn.gold{
+  border-color:#6b5513;
+  color:var(--gold)
+}
 
-    .cell-list {
-      max-height: 180px;
-      overflow-y: auto;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      background: #090d16;
-      padding: 8px;
-    }
+.btn:disabled{
+  opacity:.4;
+  cursor:not-allowed
+}
 
-    .cell-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px;
-      border-bottom: 1px solid #1e293b;
-      font-family: monospace;
-      font-size: 0.8rem;
-    }
+input[type=number],
+select{
+  background:#020605;
+  color:var(--fg);
+  border:1px solid var(--line);
+  font:inherit;
+  font-size:.78rem;
+  padding:.3rem .4rem;
+  border-radius:3px
+}
 
-    .cell-item:last-child {
-      border-bottom: none;
-    }
+input[type=number]{
+  width:5.2rem
+}
 
-    .badge-dim {
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 0.7rem;
-      font-weight: bold;
-    }
-    .badge-h0 { background: #0284c7; color: white; }
-    .badge-h1 { background: #059669; color: white; }
-    .badge-h2 { background: #db2777; color: white; }
+select{
+  width:100%
+}
 
-    #statusIndicator {
-      font-size: 0.8rem;
-      color: var(--accent-color);
-    }
-  </style>
+label{
+  font-size:.74rem;
+  color:var(--dim)
+}
+
+.kv{
+  display:flex;
+  justify-content:space-between;
+  gap:.6rem;
+  font-size:.76rem;
+  padding:.16rem 0;
+  border-bottom:1px dotted #0c241d
+}
+
+.kv span{
+  color:var(--dim)
+}
+
+.kv b{
+  font-weight:500;
+  text-align:right
+}
+
+#status{
+  font-size:.74rem;
+  min-height:1.2em;
+  color:var(--dim);
+  margin-top:.3rem
+}
+
+#status.err{
+  color:var(--err)
+}
+
+#status.ok{
+  color:var(--neon)
+}
+
+#dropZone{
+  border:2px dashed var(--line);
+  border-radius:6px;
+  padding:1.5rem;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
+  font-size:.78rem;
+  color:var(--dim)
+}
+
+#dropZone:hover,
+#dropZone.dragover{
+  border-color:var(--neon);
+  background:#07130f;
+  color:var(--fg)
+}
+
+#dropZone.loaded{
+  border-color:var(--neon);
+  background:#07130f;
+  color:var(--neon)
+}
+
+.metric{
+  border:1px solid var(--line);
+  padding:.5rem;
+  margin:.35rem 0;
+  background:#020605
+}
+
+.metric .title{
+  color:var(--dim);
+  font-size:.65rem;
+  letter-spacing:.12em;
+  text-transform:uppercase
+}
+
+.metric .value{
+  color:var(--neon);
+  font-size:1rem;
+  margin-top:.15rem
+}
+
+.metric.gold .value{
+  color:var(--gold)
+}
+
+.metric.pink .value{
+  color:var(--pink)
+}
+
+.metric.blue .value{
+  color:var(--blue)
+}
+
+.note{
+  font-size:.66rem;
+  color:var(--dim);
+  line-height:1.45
+}
+
+#classification{
+  border:1px solid var(--line);
+  padding:.7rem;
+  background:#020605;
+  margin-top:.5rem
+}
+
+#classification strong{
+  color:var(--gold)
+}
+
+.badge{
+  display:inline-block;
+  border:1px solid var(--line);
+  padding:.15rem .35rem;
+  margin:.15rem;
+  font-size:.65rem;
+  color:var(--dim)
+}
+
+#legend{
+  display:flex;
+  gap:1rem;
+  flex-wrap:wrap;
+  font-size:.65rem;
+  color:var(--dim);
+  margin-top:.4rem
+}
+
+.dot{
+  display:inline-block;
+  width:.65rem;
+  height:.65rem;
+  border-radius:50%;
+  margin-right:.25rem
+}
+
+@media(max-width:900px){
+  body{
+    overflow:auto
+  }
+
+  #app{
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto;
+    height:auto;
+    min-height:100vh
+  }
+
+  #panel{
+    border-left:0;
+    border-top:1px solid var(--line)
+  }
+}
+</style>
+
 </head>
+
 <body>
 
-  <header>
-    <div>
-      <h1>Sintetizador Lissajous & Homología Persistente (TDA)</h1>
-      <div class="subtitle">Laboratorio Sonoro - Geometría Armónica y Análisis Topológico en Tiempo Real</div>
-    </div>
-    <div class="btn-group">
-      <button id="btnAudioToggle" class="btn-secondary">🔊 Activar Audio</button>
-      <button id="btnPreset">✨ Cargar Partitura de Prueba</button>
-    </div>
-  </header>
+<div id="app">
 
-  <main class="main-grid">
+<main id="stage">
 
-    <!-- SECCIÓN 1: SINTETIZADOR LISSAJOUS -->
-    <section class="card">
-      <h2>
-        <span>Oscilador & Curva Lissajous</span>
-        <span id="nodeCountBadge" style="font-size: 0.8rem; color: var(--text-dim)">0 Nodos</span>
-      </h2>
+<canvas id="cvMain" width="1200" height="700"></canvas>
 
-      <canvas id="lissajousCanvas" width="500" height="280"></canvas>
+  <div id="legend">
+    <span><i class="dot" style="background:#39ff9c"></i>H0 componentes</span>
+    <span><i class="dot" style="background:#ffd23f"></i>H1 bucles</span>
+    <span><i class="dot" style="background:#ff6b9d"></i>H2 cavidades</span>
+    <span><i class="dot" style="background:#6bc7ff"></i>nube de estados</span>
+  </div>
 
-      <div class="controls-grid">
-        <div class="control-group">
-          <label for="inputA">Frecuencia A (a)</label>
-          <input type="number" id="inputA" value="3" min="1" max="20" step="1">
-        </div>
-        <div class="control-group">
-          <label for="inputB">Frecuencia B (b)</label>
-          <input type="number" id="inputB" value="4" min="1" max="20" step="1">
-        </div>
-        <div class="control-group">
-          <label for="inputDelta">Fase δ (x π)</label>
-          <input type="number" id="inputDelta" value="0.25" min="0" max="2" step="0.05">
-        </div>
-        <div class="control-group">
-          <label for="inputAx">Amplitud Ax</label>
-          <input type="number" id="inputAx" value="1.0" min="0.1" max="2.0" step="0.1">
-        </div>
-        <div class="control-group">
-          <label for="inputAy">Amplitud Ay</label>
-          <input type="number" id="inputAy" value="1.0" min="0.1" max="2.0" step="0.1">
-        </div>
-        <div class="control-group">
-          <label for="inputDuration">Duración D (s)</label>
-          <input type="number" id="inputDuration" value="1.5" min="0.1" max="10" step="0.1">
-        </div>
-      </div>
+</main>
 
-      <div class="btn-group">
-        <button id="btnAddNode">➕ Agregar Nodo a la Partitura</button>
-        <button id="btnClearScore" class="btn-secondary">🗑️ Limpiar</button>
-      </div>
+<aside id="panel">
 
-      <div class="cell-list" id="cellContainer">
-        <div style="color: var(--text-dim); text-align: center; font-size: 0.8rem; padding: 10px;">
-          La partitura está vacía. Añade nodos armónicos o carga la configuración de prueba.
-        </div>
-      </div>
-    </section>
+<h1>TOPO·LAB</h1>
 
-    <!-- SECCIÓN 2: ANÁLISIS TOPOLÓGICO (TDA) -->
-    <section class="card">
-      <h2>
-        <span>Análisis Topológico (TopoJS)</span>
-        <span id="statusIndicator">Listo</span>
-      </h2>
+<div class="sub">
+  Caracterización topológica individual de una partitura de Lissajous.
+  <br>
+  Sin corpus · sin clasificación supervisada.
+  <br>
+  El objetivo es obtener una <b>huella topológica</b> reproducible.
+</div>
 
-      <div class="controls-grid">
-        <div class="control-group">
-          <label for="selectMaxDim">Dimensión Máx</label>
-          <select id="selectMaxDim">
-            <option value="1">H0 y H1 (Loops 1D)</option>
-            <option value="2" selected>H0, H1 y H2 (Cavidades 2D)</option>
-          </select>
-        </div>
-        <div class="control-group">
-          <label for="inputMaxDist">Distancia Máx (ε)</label>
-          <input type="number" id="inputMaxDist" value="1.2" min="0.1" max="5.0" step="0.1">
-        </div>
-        <div class="control-group" style="justify-content: flex-end;">
-          <button id="btnComputeTDA" style="width: 100%;">📊 Calcular TDA (Worker)</button>
-        </div>
-      </div>
+<section class="sec">
 
-      <canvas id="barcodeCanvas" width="500" height="280"></canvas>
+<h2>1 · Partitura</h2>
 
-      <div class="controls-grid" style="grid-template-columns: repeat(3, 1fr);">
-        <div style="background: #090d16; padding: 8px; border-radius: 4px; text-align: center;">
-          <span class="badge-dim badge-h0">H0</span>
-          <div id="betti0Val" style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">-</div>
-          <div style="font-size: 0.65rem; color: var(--text-dim);">Componentes Conectadas</div>
-        </div>
-        <div style="background: #090d16; padding: 8px; border-radius: 4px; text-align: center;">
-          <span class="badge-dim badge-h1">H1</span>
-          <div id="betti1Val" style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">-</div>
-          <div style="font-size: 0.65rem; color: var(--text-dim);">Ciclos / Ciclos Armónicos</div>
-        </div>
-        <div style="background: #090d16; padding: 8px; border-radius: 4px; text-align: center;">
-          <span class="badge-dim badge-h2">H2</span>
-          <div id="betti2Val" style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">-</div>
-          <div style="font-size: 0.65rem; color: var(--text-dim);">Vacíos / Envolventes</div>
-        </div>
-      </div>
-    </section>
+<div id="dropZone">
+  <strong>Arrastra score_*.json</strong><br>
+  <span style="font-size:.7rem">
+    o haz clic para seleccionar
+  </span>
+</div>
 
-  </main>
+<input
+type="file"
+id="fileIn"
+accept=".json,application/json"
+hidden
 
-  <script type="module">
-    // ==========================================
-    // 1. ESTADO GLOBAL & ESTRUCTURA SCORE
-    // ==========================================
-    class ScoreManager {
-      constructor() {
-        this.cells = [];
-      }
+>
 
-      addCell(cell) {
-        this.cells.push(cell);
-      }
+<div class="kv">
+  <span>Celdas</span>
+  <b id="o_cells">–</b>
+</div>
 
-      clear() {
-        this.cells = [];
-      }
+<div class="kv">
+  <span>Dimensiones</span>
+  <b id="o_dims">–</b>
+</div>
 
-      toJSON() {
-        return { cells: this.cells };
-      }
-    }
+<div class="kv">
+  <span>Archivo</span>
+  <b id="o_file">–</b>
+</div>
 
-    const SCORE = new ScoreManager();
+</section>
 
-    // Contexto de Audio Web
-    let audioCtx = null;
+<section class="sec">
 
-    function initAudio() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-    }
+<h2>2 · Espacio de estados</h2>
 
-    // ==========================================
-    // 2. RENDERIZADOR CANVAS LISSAJOUS
-    // ==========================================
-    const lissCanvas = document.getElementById('lissajousCanvas');
-    const lissCtx = lissCanvas.getContext('2d');
-    let animFrameId = null;
+<label>Representación</label>
 
-    function renderLissajous() {
-      const w = lissCanvas.width;
-      const h = lissCanvas.height;
-      const cx = w / 2;
-      const cy = h / 2;
-      const scale = Math.min(w, h) * 0.38;
+<select id="spaceMode">
 
-      lissCtx.fillStyle = '#020617';
-      lissCtx.fillRect(0, 0, w, h);
+<option value="full">
+7D · a,b,δ/π,Ax,Ay,D,E
+</option>
 
-      // Dibujar grilla suave
-      lissCtx.strokeStyle = '#1e293b';
-      lissCtx.lineWidth = 1;
-      lissCtx.beginPath();
-      lissCtx.moveTo(cx, 0); lissCtx.lineTo(cx, h);
-      lissCtx.moveTo(0, cy); lissCtx.lineTo(w, cy);
-      lissCtx.stroke();
+<option value="geometry">
+4D · a,b,Ax,Ay
+</option>
 
-      if (SCORE.cells.length === 0) {
-        // Graficar preview del control actual
-        const a = parseFloat(document.getElementById('inputA').value) || 1;
-        const b = parseFloat(document.getElementById('inputB').value) || 1;
-        const delta = (parseFloat(document.getElementById('inputDelta').value) || 0) * Math.PI;
-        const Ax = parseFloat(document.getElementById('inputAx').value) || 1;
-        const Ay = parseFloat(document.getElementById('inputAy').value) || 1;
+<option value="phase">
+3D · a,b,δ/π
+</option>
 
-        drawSingleLissajous(a, b, delta, Ax, Ay, scale, cx, cy, '#38bdf8', 2);
-      } else {
-        // Graficar superposición de toda la partitura
-        const total = SCORE.cells.length;
-        SCORE.cells.forEach((cell, idx) => {
-          const p = cell.p;
-          const deltaRad = (p.delta || 0) * Math.PI;
-          const hue = (idx * 360 / total) % 360;
-          drawSingleLissajous(p.a, p.b, deltaRad, p.Ax, p.Ay, scale, cx, cy, `hsl(${hue}, 80%, 60%)`, 1.5);
-        });
-      }
+<option value="energy">
+4D · a,b,D,E
+</option>
 
-      animFrameId = requestAnimationFrame(renderLissajous);
-    }
+</select>
 
-    function drawSingleLissajous(a, b, delta, Ax, Ay, scale, cx, cy, color, strokeWidth) {
-      lissCtx.strokeStyle = color;
-      lissCtx.lineWidth = strokeWidth;
-      lissCtx.beginPath();
+<div class="note" style="margin-top:.4rem">
+La representación elegida determina la geometría sobre la que se
+construye la filtración Vietoris–Rips.
+</div>
 
-      const steps = 300;
-      for (let i = 0; i <= steps; i++) {
-        const t = (i / steps) * Math.PI * 2;
-        const x = cx + Ax * Math.sin(a * t + delta) * scale * 0.8;
-        const y = cy + Ay * Math.sin(b * t) * scale * 0.8;
+</section>
 
-        if (i === 0) lissCtx.moveTo(x, y);
-        else lissCtx.lineTo(x, y);
-      }
-      lissCtx.stroke();
-    }
+<section class="sec">
 
-    // ==========================================
-    // 3. EXTRACCIÓN Y NORMALIZACIÓN (N-DIM)
-    // ==========================================
-    function extractNormalizedPointCloud(scoreObj) {
-      if (!scoreObj || !scoreObj.cells || scoreObj.cells.length === 0) return [];
+<h2>3 · Filtración</h2>
 
-      const rows = scoreObj.cells.map(c => {
-        const p = c.p || {};
-        return [
-          Number(p.a) || 1,
-          Number(p.b) || 1,
-          Number(p.delta) || 0,
-          Number(p.Ax) || 1,
-          Number(p.Ay) || 1,
-          (c.D !== undefined && c.D !== null) ? Number(c.D) : 1.5,
-          Number(p.E) || 0
-        ];
-      });
+<div class="row">
 
-      const dims = rows[0].length;
-      const mins = new Array(dims).fill(Infinity);
-      const maxs = new Array(dims).fill(-Infinity);
+<label>
+maxDim
+<input
+  type="number"
+  id="inMaxDim"
+  value="2"
+  min="0"
+  max="3"
+  step="1">
+</label>
 
-      for (const r of rows) {
-        for (let d = 0; d < dims; d++) {
-          if (r[d] < mins[d]) mins[d] = r[d];
-          if (r[d] > maxs[d]) maxs[d] = r[d];
-        }
-      }
+<label>
+maxDist
+<input
+  type="number"
+  id="inMaxDist"
+  value="1"
+  min=".01"
+  max="10"
+  step=".01">
+</label>
 
-      // Escalado Min-Max [0, 1]
-      return rows.map(r =>
-        r.map((val, d) => {
-          const span = maxs[d] - mins[d];
-          return span > 1e-12 ? (val - mins[d]) / span : 0;
-        })
-      );
-    }
+<label>
+Hdim
+<input
+  type="number"
+  id="inHomDim"
+  value="1"
+  min="0"
+  max="2"
+  step="1">
+</label>
 
-    // ==========================================
-    // 4. INLINE WEB WORKER (TOPOJS VIA CDN)
-    // ==========================================
-    const workerScript = `
-      import { computePersistentHomology, summarize } from 'https://cdn.jsdelivr.net/npm/@manohar_maharshi/topojs@1.2.0/+esm';
+</div>
 
-      self.onmessage = function(e) {
-        const { points, maxDim, maxDist, homDim } = e.data;
-        try {
-          if (!points || points.length < 2) {
-            self.postMessage({ error: 'Se requieren al menos 2 nodos en la partitura para calcular TDA.' });
-            return;
-          }
-          const result = computePersistentHomology(points, maxDim, maxDist, homDim);
-          const summary = summarize ? summarize(result.pairs) : null;
-          self.postMessage({ pairs: result.pairs || result, summary: summary });
-        } catch (err) {
-          self.postMessage({ error: 'Error en cálculo TDA: ' + (err.message || err) });
-        }
-      };
-    `;
+<button
+class="btn gold"
+id="btnRun"
+disabled>
+Calcular TDA </button>
 
-    const blob = new Blob([workerScript], { type: 'application/javascript' });
-    const workerURL = URL.createObjectURL(blob);
-    const tdaWorker = new Worker(workerURL, { type: 'module' });
+</section>
 
-    tdaWorker.onmessage = function(e) {
-      document.getElementById('statusIndicator').innerText = 'Listo';
-      if (e.data.error) {
-        alert(e.data.error);
-        return;
-      }
-      const pairs = e.data.pairs;
-      const maxDist = parseFloat(document.getElementById('inputMaxDist').value) || 1.2;
-      drawBarcodes(pairs, maxDist);
-      updateBettiSummary(pairs, maxDist);
+<section class="sec">
+
+<h2>4 · Persistencia</h2>
+
+<div class="metric">
+  <div class="title">H₁ · número de clases</div>
+  <div class="value" id="m_h1n">–</div>
+</div>
+
+<div class="metric gold">
+  <div class="title">H₁ · persistencia total</div>
+  <div class="value" id="m_h1total">–</div>
+</div>
+
+<div class="metric gold">
+  <div class="title">H₁ · persistencia máxima</div>
+  <div class="value" id="m_h1max">–</div>
+</div>
+
+<div class="metric pink">
+  <div class="title">H₁ · entropía</div>
+  <div class="value" id="m_h1entropy">–</div>
+</div>
+
+</section>
+
+<section class="sec">
+
+<h2>5 · Bucleicidad</h2>
+
+<div class="metric blue">
+  <div class="title">Bucleicidad bruta</div>
+  <div class="value" id="m_loop">–</div>
+</div>
+
+<div class="metric blue">
+  <div class="title">Bucleicidad normalizada</div>
+  <div class="value" id="m_loopNorm">–</div>
+</div>
+
+<div class="note">
+  Esta métrica no pretende afirmar todavía que un género musical
+  tenga una "firma" topológica. Es un descriptor experimental:
+  cuantifica la presencia y persistencia relativa de ciclos H₁.
+</div>
+
+</section>
+
+<section class="sec">
+
+<h2>6 · Estructura global</h2>
+
+<div class="kv">
+  <span>β₀</span>
+  <b id="m_b0">–</b>
+</div>
+
+<div class="kv">
+  <span>β₁</span>
+  <b id="m_b1">–</b>
+</div>
+
+<div class="kv">
+  <span>β₂</span>
+  <b id="m_b2">–</b>
+</div>
+
+<div class="kv">
+  <span>H₀ persistencia</span>
+  <b id="m_h0total">–</b>
+</div>
+
+<div class="kv">
+  <span>H₂ persistencia</span>
+  <b id="m_h2total">–</b>
+</div>
+
+</section>
+
+<section class="sec">
+
+<h2>7 · Lectura experimental</h2>
+
+<div id="classification">
+
+<strong id="classTitle">
+Sin clasificación
+</strong>
+
+<div id="classText" class="note" style="margin-top:.4rem">
+  Necesitamos un corpus para aprender relaciones entre
+  características topológicas y géneros musicales.
+</div>
+
+</div>
+
+</section>
+
+<section class="sec">
+
+<h2>8 · Exportar</h2>
+
+<div class="row">
+
+<button
+class="btn"
+id="btnJson"
+disabled>
+Exportar huella JSON </button>
+
+</div>
+
+<div class="note">
+  El archivo contiene parámetros, normalización, pares de persistencia
+  y descriptores. Puede utilizarse posteriormente para construir
+  un corpus de entrenamiento.
+</div>
+
+</section>
+
+<div id="status">
+  Esperando partitura…
+</div>
+
+</aside>
+
+</div>
+
+<script type="module">
+
+'use strict';
+
+
+/* ================================================================
+   TOPOJS
+   ================================================================ */
+
+import {
+  computePersistentHomology,
+  summarize
+}
+from
+'https://cdn.jsdelivr.net/npm/@manohar_maharshi/topojs@1.2.0/+esm';
+
+
+/* ================================================================
+   ESTADO
+   ================================================================ */
+
+const $ = id => document.getElementById(id);
+
+let SCORE_DATA = null;
+
+let RAW_ROWS = [];
+
+let POINT_CLOUD = null;
+
+let NORMALIZATION = null;
+
+let TDA_RESULT = null;
+
+
+/* ================================================================
+   STATUS
+   ================================================================ */
+
+function setStatus(msg, cls=''){
+  const s = $('status');
+  s.textContent = msg;
+  s.className = cls;
+}
+
+
+/* ================================================================
+   EXTRACCIÓN DE VARIABLES
+   ================================================================ */
+
+function extractRows(obj){
+
+  const rows = [];
+
+  for(const c of obj.cells){
+
+    const p = c.p;
+
+    if(!p) continue;
+
+    rows.push({
+
+      a: Number(p.a) || 0,
+
+      b: Number(p.b) || 0,
+
+      delta:
+        Number.isFinite(Number(p.delta))
+        ? Number(p.delta) / Math.PI
+        : 0,
+
+      Ax: Number(p.Ax) || 0,
+
+      Ay: Number(p.Ay) || 0,
+
+      D:
+        Number.isFinite(Number(c.D))
+        ? Number(c.D)
+        : 0,
+
+      E: Number(p.E) || 0
+
+    });
+
+  }
+
+  return rows;
+}
+
+
+/* ================================================================
+   CONSTRUCCIÓN DEL ESPACIO
+   ================================================================ */
+
+function buildSpace(rows, mode){
+
+  if(mode === 'geometry'){
+
+    return rows.map(r => [
+      r.a,
+      r.b,
+      r.Ax,
+      r.Ay
+    ]);
+
+  }
+
+  if(mode === 'phase'){
+
+    return rows.map(r => [
+      r.a,
+      r.b,
+      r.delta
+    ]);
+
+  }
+
+  if(mode === 'energy'){
+
+    return rows.map(r => [
+      r.a,
+      r.b,
+      r.D,
+      r.E
+    ]);
+
+  }
+
+  return rows.map(r => [
+    r.a,
+    r.b,
+    r.delta,
+    r.Ax,
+    r.Ay,
+    r.D,
+    r.E
+  ]);
+}
+
+
+/* ================================================================
+   NORMALIZACIÓN
+   ================================================================ */
+
+function normalizeRows(rows){
+
+  if(!rows.length){
+
+    return {
+      points:new Float64Array(),
+      mins:[],
+      maxs:[],
+      dims:0
     };
 
-    // ==========================================
-    // 5. VISUALIZADOR DE BARCODES Y BETTI
-    // ==========================================
-    function drawBarcodes(pairs, maxDist) {
-      const canvas = document.getElementById('barcodeCanvas');
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
+  }
 
-      ctx.fillStyle = '#020617';
-      ctx.fillRect(0, 0, w, h);
+  const dims = rows[0].length;
 
-      if (!pairs || pairs.length === 0) {
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '13px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('Sin pares de homología persistente', w / 2, h / 2);
-        return;
+  const mins =
+    Array(dims).fill(Infinity);
+
+  const maxs =
+    Array(dims).fill(-Infinity);
+
+
+  for(const row of rows){
+
+    for(let d=0;d<dims;d++){
+
+      const x = Number(row[d]);
+
+      if(x < mins[d])
+        mins[d] = x;
+
+      if(x > maxs[d])
+        maxs[d] = x;
+
+    }
+
+  }
+
+
+  const points =
+    new Float64Array(rows.length * dims);
+
+
+  for(let i=0;i<rows.length;i++){
+
+    for(let d=0;d<dims;d++){
+
+      const span =
+        maxs[d] - mins[d];
+
+      points[i*dims+d] =
+        span > 1e-12
+        ? (rows[i][d]-mins[d])/span
+        : 0;
+
+    }
+
+  }
+
+
+  return {
+    points,
+    mins,
+    maxs,
+    dims
+  };
+
+}
+
+
+/* ================================================================
+   CARGA
+   ================================================================ */
+
+function loadScore(obj, filename){
+
+  if(
+    !obj ||
+    !Array.isArray(obj.cells)
+  ){
+
+    setStatus(
+      'JSON inválido: falta cells[].',
+      'err'
+    );
+
+    return;
+
+  }
+
+
+  SCORE_DATA = obj;
+
+  RAW_ROWS = extractRows(obj);
+
+
+  $('o_cells').textContent =
+    RAW_ROWS.length;
+
+  $('o_dims').textContent =
+    obj.meta
+      ? `τ=${obj.meta.tau ?? '–'} · hop=${obj.meta.hop ?? '–'}`
+      : '–';
+
+  $('o_file').textContent =
+    filename || '–';
+
+
+  $('dropZone').classList.add('loaded');
+
+  $('dropZone').innerHTML =
+    `<strong>✓ ${RAW_ROWS.length} celdas cargadas</strong><br>
+     <span style="font-size:.7rem">
+     ${filename || ''}</span>`;
+
+
+  $('btnRun').disabled =
+    RAW_ROWS.length < 3;
+
+
+  drawCloud();
+
+
+  setStatus(
+    `${RAW_ROWS.length} estados listos para TDA`,
+    'ok'
+  );
+
+}
+
+
+/* ================================================================
+   FILE INPUT
+   ================================================================ */
+
+const dz = $('dropZone');
+
+dz.addEventListener(
+  'click',
+  () => $('fileIn').click()
+);
+
+
+dz.addEventListener(
+  'dragover',
+  e => {
+
+    e.preventDefault();
+
+    dz.classList.add('dragover');
+
+  }
+);
+
+
+dz.addEventListener(
+  'dragleave',
+  () =>
+    dz.classList.remove('dragover')
+);
+
+
+dz.addEventListener(
+  'drop',
+  e => {
+
+    e.preventDefault();
+
+    dz.classList.remove('dragover');
+
+    const f =
+      e.dataTransfer.files[0];
+
+    if(f)
+      readFile(f);
+
+  }
+);
+
+
+$('fileIn').addEventListener(
+  'change',
+  e => {
+
+    const f =
+      e.target.files[0];
+
+    if(f)
+      readFile(f);
+
+    e.target.value='';
+
+  }
+);
+
+
+function readFile(file){
+
+  const reader =
+    new FileReader();
+
+  reader.onload = () => {
+
+    try{
+
+      const obj =
+        JSON.parse(reader.result);
+
+      loadScore(
+        obj,
+        file.name
+      );
+
+    }
+    catch(err){
+
+      setStatus(
+        'Error JSON: '+err.message,
+        'err'
+      );
+
+    }
+
+  };
+
+  reader.readAsText(file);
+
+}
+
+
+/* ================================================================
+   ESPACIO + NORMALIZACIÓN
+   ================================================================ */
+
+function preparePointCloud(){
+
+  const mode =
+    $('spaceMode').value;
+
+  const raw =
+    buildSpace(
+      RAW_ROWS,
+      mode
+    );
+
+
+  NORMALIZATION =
+    normalizeRows(raw);
+
+
+  POINT_CLOUD =
+    NORMALIZATION.points;
+
+}
+
+
+/* ================================================================
+   TDA
+   ================================================================ */
+
+$('btnRun').addEventListener(
+  'click',
+  () => {
+
+    if(!RAW_ROWS.length){
+
+      setStatus(
+        'Carga una partitura primero.',
+        'err'
+      );
+
+      return;
+
+    }
+
+
+    const maxDim =
+      Math.max(
+        0,
+        Math.min(
+          3,
+          parseInt(
+            $('inMaxDim').value
+          ) || 2
+        )
+      );
+
+
+    const maxDist =
+      Math.max(
+        .01,
+        parseFloat(
+          $('inMaxDist').value
+        ) || 1
+      );
+
+
+    const homDim =
+      Math.max(
+        0,
+        Math.min(
+          2,
+          parseInt(
+            $('inHomDim').value
+          ) || 1
+        )
+      );
+
+
+    preparePointCloud();
+
+
+    setStatus(
+      'Construyendo filtración Vietoris–Rips…'
+    );
+
+
+    $('btnRun').disabled =
+      true;
+
+
+    setTimeout(() => {
+
+      try{
+
+        const t0 =
+          performance.now();
+
+
+        const result =
+          computePersistentHomology(
+            POINT_CLOUD,
+            maxDim,
+            maxDist,
+            homDim
+          );
+
+
+        const elapsed =
+          performance.now()-t0;
+
+
+        const pairs =
+          result.pairs || [];
+
+
+        const summary =
+          summarize(pairs);
+
+
+        const descriptors =
+          computeDescriptors(
+            pairs,
+            maxDist
+          );
+
+
+        const betti =
+          computeBettiCurve(
+            pairs,
+            maxDist
+          );
+
+
+        TDA_RESULT = {
+
+          pairs,
+
+          summary,
+
+          descriptors,
+
+          betti,
+
+          params:{
+            maxDim,
+            maxDist,
+            homDim,
+            elapsed,
+            nPoints:
+              RAW_ROWS.length,
+            nDims:
+              NORMALIZATION.dims,
+            space:
+              $('spaceMode').value
+          },
+
+          normalization:
+            NORMALIZATION
+
+        };
+
+
+        drawTopology(
+          pairs,
+          maxDist
+        );
+
+
+        updateMetrics(
+          descriptors,
+          betti
+        );
+
+
+        interpret(
+          descriptors
+        );
+
+
+        $('btnJson').disabled =
+          false;
+
+
+        setStatus(
+          `TDA completado · ${elapsed.toFixed(0)} ms · ${pairs.length} pares`,
+          'ok'
+        );
+
+      }
+      catch(err){
+
+        console.error(err);
+
+        setStatus(
+          'Error en TDA: '+(
+            err.message || err
+          ),
+          'err'
+        );
+
       }
 
-      // Normalizar estructura de pares
-      const parsed = pairs.map(p => {
-        if (Array.isArray(p)) {
-          return { dim: p[0], birth: p[1], death: (p[2] === Infinity || p[2] === null) ? maxDist : p[2] };
-        }
-        return {
-          dim: p.dim !== undefined ? p.dim : 0,
-          birth: p.birth !== undefined ? p.birth : 0,
-          death: (p.death === undefined || p.death === Infinity || p.death === null) ? maxDist : p.death
-        };
+
+      $('btnRun').disabled =
+        false;
+
+    },30);
+
+  }
+);
+
+
+/* ================================================================
+   DESCRIPTORES
+   ================================================================ */
+
+function computeDescriptors(
+  pairs,
+  maxDist
+){
+
+  const byDim =
+    {
+      0:[],
+      1:[],
+      2:[]
+    };
+
+
+  for(
+    const [dim,birth,death]
+    of pairs
+  ){
+
+    const d =
+      Math.round(dim);
+
+
+    if(!byDim[d])
+      continue;
+
+
+    const finiteDeath =
+      Number.isFinite(death);
+
+
+    const length =
+      finiteDeath
+        ? Math.max(
+            0,
+            death-birth
+          )
+        : Math.max(
+            0,
+            maxDist-birth
+          );
+
+
+    if(length > 1e-10){
+
+      byDim[d].push({
+        birth,
+        death,
+        persistence:length
       });
 
-      const paddingLeft = 45;
-      const paddingBottom = 25;
-      const paddingTop = 15;
-      const paddingRight = 15;
+    }
 
-      const renderW = w - paddingLeft - paddingRight;
-      const renderH = h - paddingTop - paddingBottom;
+  }
 
-      const rowHeight = Math.min(16, Math.max(3, renderH / parsed.length));
-      const colors = { 0: '#38bdf8', 1: '#34d399', 2: '#f472b6' };
 
-      // Ejes
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 1;
+  const out = {};
+
+
+  for(const d of [0,1,2]){
+
+    const bars =
+      byDim[d];
+
+
+    const lengths =
+      bars.map(
+        x=>x.persistence
+      );
+
+
+    const n =
+      lengths.length;
+
+
+    if(!n){
+
+      out[`H${d}`] = {
+        n:0,
+        total:0,
+        max:0,
+        mean:0,
+        median:0,
+        entropy:0,
+        normalized:0
+      };
+
+      continue;
+
+    }
+
+
+    const total =
+      lengths.reduce(
+        (a,b)=>a+b,
+        0
+      );
+
+
+    const max =
+      Math.max(...lengths);
+
+
+    const mean =
+      total/n;
+
+
+    const sorted =
+      [...lengths].sort(
+        (a,b)=>a-b
+      );
+
+
+    const median =
+      n%2
+        ? sorted[(n-1)/2]
+        : (
+            sorted[n/2-1]
+            +
+            sorted[n/2]
+          )/2;
+
+
+    let entropy = 0;
+
+
+    for(const l of lengths){
+
+      const p =
+        l/total;
+
+      if(p>0)
+        entropy -=
+          p*Math.log2(p);
+
+    }
+
+
+    const normalized =
+      maxDist > 0
+        ? total/maxDist
+        : 0;
+
+
+    out[`H${d}`] = {
+
+      n,
+      total,
+      max,
+      mean,
+      median,
+      entropy,
+      normalized
+
+    };
+
+  }
+
+
+  /*
+   * Bucleicidad:
+   *
+   * No contamos simplemente H1.
+   * Pesamos cada ciclo por su persistencia.
+   *
+   * loopRaw =
+   * Σ(death-birth)
+   *
+   * loopNorm =
+   * Σpersistencia / Σpersistencia de todos
+   *
+   * Esto permite comparar archivos con diferente
+   * número de ciclos.
+   */
+
+  const h1 =
+    out.H1;
+
+
+  const totalPersistence =
+    out.H0.total
+    +
+    out.H1.total
+    +
+    out.H2.total;
+
+
+  const loopRaw =
+    h1.total;
+
+
+  const loopNorm =
+    totalPersistence > 0
+      ? h1.total /
+        totalPersistence
+      : 0;
+
+
+  out.loop = {
+
+    raw:loopRaw,
+
+    normalized:loopNorm,
+
+    density:
+      nSafe(h1.n) /
+      Math.max(
+        1,
+        h1.n +
+        out.H0.n +
+        out.H2.n
+      )
+
+  };
+
+
+  return out;
+
+}
+
+
+function nSafe(x){
+
+  return Number.isFinite(x)
+    ? x
+    : 0;
+
+}
+
+
+/* ================================================================
+   BETTI CURVE
+   ================================================================ */
+
+function computeBettiCurve(
+  pairs,
+  maxDist
+){
+
+  const samples = 101;
+
+  const curve = [];
+
+
+  for(
+    let i=0;
+    i<samples;
+    i++
+  ){
+
+    const eps =
+      maxDist *
+      i /
+      (samples-1);
+
+
+    const beta = {
+      0:0,
+      1:0,
+      2:0
+    };
+
+
+    for(
+      const [dim,birth,death]
+      of pairs
+    ){
+
+      const d =
+        Math.round(dim);
+
+
+      if(
+        d<0 ||
+        d>2
+      )
+        continue;
+
+
+      const alive =
+        birth <= eps &&
+        (
+          death === Infinity ||
+          !Number.isFinite(death) ||
+          eps < death
+        );
+
+
+      if(alive)
+        beta[d]++;
+
+    }
+
+
+    curve.push({
+      eps,
+      ...beta
+    });
+
+  }
+
+
+  return curve;
+
+}
+
+
+/* ================================================================
+   MÉTRICAS
+   ================================================================ */
+
+function fmt(x){
+
+  return Number.isFinite(x)
+    ? x.toFixed(5)
+    : '–';
+
+}
+
+
+function updateMetrics(
+  desc,
+  betti
+){
+
+  $('m_h1n').textContent =
+    desc.H1.n;
+
+  $('m_h1total').textContent =
+    fmt(desc.H1.total);
+
+  $('m_h1max').textContent =
+    fmt(desc.H1.max);
+
+  $('m_h1entropy').textContent =
+    fmt(desc.H1.entropy);
+
+
+  $('m_loop').textContent =
+    fmt(desc.loop.raw);
+
+  $('m_loopNorm').textContent =
+    fmt(desc.loop.normalized);
+
+
+  const mid =
+    betti[
+      Math.floor(
+        betti.length/2
+      )
+    ];
+
+
+  $('m_b0').textContent =
+    mid ? mid[0] : '–';
+
+  $('m_b1').textContent =
+    mid ? mid[1] : '–';
+
+  $('m_b2').textContent =
+    mid ? mid[2] : '–';
+
+
+  $('m_h0total').textContent =
+    fmt(desc.H0.total);
+
+  $('m_h2total').textContent =
+    fmt(desc.H2.total);
+
+}
+
+
+/* ================================================================
+   VISUALIZACIÓN
+   ================================================================ */
+
+function drawTopology(
+  pairs,
+  maxDist
+){
+
+  const cv =
+    $('cvMain');
+
+  const ctx =
+    cv.getContext('2d');
+
+
+  const W =
+    cv.width;
+
+  const H =
+    cv.height;
+
+
+  ctx.clearRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+
+  ctx.fillStyle =
+    '#010403';
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+
+  /*
+   * PANEL SUPERIOR:
+   * BARCODE
+   */
+
+  const padL=80;
+  const padR=30;
+  const padT=35;
+
+  const barcodeH=360;
+
+  const plotW =
+    W-padL-padR;
+
+
+  ctx.strokeStyle =
+    '#10382d';
+
+  ctx.lineWidth=1;
+
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    padL,
+    padT
+  );
+
+  ctx.lineTo(
+    padL,
+    barcodeH
+  );
+
+  ctx.lineTo(
+    W-padR,
+    barcodeH
+  );
+
+  ctx.stroke();
+
+
+  const colors = {
+
+    0:'#39ff9c',
+    1:'#ffd23f',
+    2:'#ff6b9d'
+
+  };
+
+
+  const byDim={
+    0:[],
+    1:[],
+    2:[]
+  };
+
+
+  for(
+    const [d,birth,death]
+    of pairs
+  ){
+
+    if(byDim[d])
+      byDim[d].push([
+        birth,
+        death
+      ]);
+
+  }
+
+
+  let y=padT+25;
+
+
+  for(const d of [0,1,2]){
+
+    const bars =
+      byDim[d];
+
+
+    if(!bars.length)
+      continue;
+
+
+    ctx.fillStyle =
+      colors[d];
+
+    ctx.font =
+      'bold 13px monospace';
+
+    ctx.fillText(
+      `H${d} · ${bars.length}`,
+      8,
+      y
+    );
+
+
+    y+=16;
+
+
+    bars.sort(
+      (a,b)=>a[0]-b[0]
+    );
+
+
+    for(
+      const [birth,death]
+      of bars
+    ){
+
+      if(y>barcodeH-5)
+        break;
+
+
+      const x0 =
+        padL +
+        birth/maxDist*
+        plotW;
+
+
+      const actualDeath =
+        Number.isFinite(death)
+          ? Math.min(
+              death,
+              maxDist
+            )
+          : maxDist;
+
+
+      const x1 =
+        padL +
+        actualDeath/maxDist*
+        plotW;
+
+
+      ctx.strokeStyle =
+        colors[d];
+
+      ctx.globalAlpha=.8;
+
+      ctx.lineWidth=3;
+
+
       ctx.beginPath();
-      ctx.moveTo(paddingLeft, paddingTop);
-      ctx.lineTo(paddingLeft, h - paddingBottom);
-      ctx.lineTo(w - paddingRight, h - paddingBottom);
+
+      ctx.moveTo(
+        x0,
+        y
+      );
+
+      ctx.lineTo(
+        x1,
+        y
+      );
+
       ctx.stroke();
 
-      // Graduaciones de distancia ε
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'center';
-      for (let i = 0; i <= 4; i++) {
-        const val = (maxDist * (i / 4)).toFixed(2);
-        const x = paddingLeft + (renderW * (i / 4));
-        ctx.fillText(val, x, h - 8);
-      }
 
-      // Dibujar Barras
-      parsed.forEach((bar, idx) => {
-        const y = paddingTop + idx * rowHeight;
-        const xBirth = paddingLeft + Math.min(1, Math.max(0, bar.birth / maxDist)) * renderW;
-        const xDeath = paddingLeft + Math.min(1, Math.max(0, bar.death / maxDist)) * renderW;
-        const barW = Math.max(2, xDeath - xBirth);
+      y+=5;
 
-        ctx.fillStyle = colors[bar.dim] || '#38bdf8';
-        ctx.fillRect(xBirth, y, barW, Math.max(2, rowHeight - 2));
-
-        // Etiqueta dimensión
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '9px monospace';
-        ctx.textAlign = 'right';
-        ctx.fillText(`H${bar.dim}`, paddingLeft - 6, y + rowHeight / 1.3);
-      });
     }
 
-    function updateBettiSummary(pairs, maxDist) {
-      let b0 = 0, b1 = 0, b2 = 0;
-      if (pairs) {
-        pairs.forEach(p => {
-          const dim = Array.isArray(p) ? p[0] : p.dim;
-          const death = Array.isArray(p) ? p[2] : p.death;
-          // Un ciclo o componente es persistente a maxDist si death >= maxDist
-          if (death === Infinity || death === null || death >= maxDist * 0.95) {
-            if (dim === 0) b0++;
-            if (dim === 1) b1++;
-            if (dim === 2) b2++;
-          }
-        });
-      }
-      document.getElementById('betti0Val').innerText = b0;
-      document.getElementById('betti1Val').innerText = b1;
-      document.getElementById('betti2Val').innerText = b2;
+
+    y+=12;
+
+  }
+
+
+  ctx.globalAlpha=1;
+
+
+  ctx.fillStyle =
+    '#4f7f6c';
+
+  ctx.font =
+    '11px monospace';
+
+
+  for(
+    let i=0;
+    i<=10;
+    i++
+  ){
+
+    const x =
+      padL+
+      plotW*i/10;
+
+
+    ctx.fillText(
+      (maxDist*i/10)
+        .toFixed(2),
+      x-12,
+      barcodeH+18
+    );
+
+  }
+
+
+  /*
+   * PANEL INFERIOR:
+   * CURVA BETTI
+   */
+
+  if(!TDA_RESULT)
+    return;
+
+
+  const curve =
+    TDA_RESULT.betti;
+
+
+  const graphTop =
+    barcodeH+55;
+
+  const graphBottom =
+    H-25;
+
+  const graphH =
+    graphBottom-graphTop;
+
+
+  ctx.fillStyle =
+    '#4f7f6c';
+
+  ctx.fillText(
+    'CURVAS DE BETTI',
+    8,
+    graphTop+10
+  );
+
+
+  const maxBeta =
+    Math.max(
+      1,
+      ...curve.map(
+        x=>Math.max(
+          x[0],
+          x[1],
+          x[2]
+        )
+      )
+    );
+
+
+  const drawBetti =
+    (dim,color)=>{
+
+      ctx.strokeStyle =
+        color;
+
+      ctx.lineWidth=1.5;
+
+      ctx.beginPath();
+
+
+      curve.forEach(
+        (p,i)=>{
+
+          const x =
+            padL+
+            i/
+            (curve.length-1)*
+            plotW;
+
+
+          const y =
+            graphBottom -
+            p[dim]/
+            maxBeta*
+            graphH;
+
+
+          if(i===0)
+            ctx.moveTo(x,y);
+          else
+            ctx.lineTo(x,y);
+
+        }
+      );
+
+
+      ctx.stroke();
+
+    };
+
+
+  drawBetti(
+    0,
+    '#39ff9c'
+  );
+
+  drawBetti(
+    1,
+    '#ffd23f'
+  );
+
+  drawBetti(
+    2,
+    '#ff6b9d'
+  );
+
+}
+
+
+/* ================================================================
+   NUBE DE PUNTOS
+   ================================================================ */
+
+function drawCloud(){
+
+  if(!RAW_ROWS.length)
+    return;
+
+
+  /*
+   * Proyección visual sencilla:
+   * Ax × Ay.
+   *
+   * Esto NO sustituye la geometría TDA.
+   * Solo permite inspeccionar la partitura.
+   */
+
+  const cv =
+    $('cvMain');
+
+  const ctx =
+    cv.getContext('2d');
+
+
+  const W=cv.width;
+  const H=cv.height;
+
+
+  ctx.clearRect(
+    0,0,W,H
+  );
+
+  ctx.fillStyle='#010403';
+  ctx.fillRect(
+    0,0,W,H
+  );
+
+
+  const pad=60;
+
+  const xs =
+    RAW_ROWS.map(
+      r=>r.Ax
+    );
+
+  const ys =
+    RAW_ROWS.map(
+      r=>r.Ay
+    );
+
+
+  const xmin =
+    Math.min(...xs);
+
+  const xmax =
+    Math.max(...xs);
+
+  const ymin =
+    Math.min(...ys);
+
+  const ymax =
+    Math.max(...ys);
+
+
+  const sx =
+    xmax-xmin || 1;
+
+  const sy =
+    ymax-ymin || 1;
+
+
+  ctx.fillStyle =
+    '#6bc7ff';
+
+
+  for(
+    let i=0;
+    i<RAW_ROWS.length;
+    i++
+  ){
+
+    const x =
+      pad+
+      (
+        RAW_ROWS[i].Ax-xmin
+      )/sx*
+      (W-2*pad);
+
+
+    const y =
+      H-pad-
+      (
+        RAW_ROWS[i].Ay-ymin
+      )/sy*
+      (H-2*pad);
+
+
+    ctx.globalAlpha=.35;
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+      x,
+      y,
+      1.5,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fill();
+
+  }
+
+
+  ctx.globalAlpha=1;
+
+
+  ctx.fillStyle =
+    '#4f7f6c';
+
+  ctx.font =
+    '12px monospace';
+
+  ctx.fillText(
+    'NUBE DE ESTADOS · Ax × Ay',
+    12,
+    20
+  );
+
+}
+
+
+/* ================================================================
+   INTERPRETACIÓN
+   ================================================================ */
+
+function interpret(desc){
+
+  const loop =
+    desc.loop.normalized;
+
+  const max =
+    desc.H1.max;
+
+  const n =
+    desc.H1.n;
+
+
+  let title =
+    'Estructura topológica sin clasificar';
+
+
+  let text =
+    'Todavía no es posible asignar un género musical. '+
+    'Esta ejecución produce descriptores que posteriormente '+
+    'pueden compararse contra un corpus.';
+
+
+  /*
+   * Estas etiquetas NO son géneros.
+   * Son categorías descriptivas internas.
+   */
+
+  if(
+    n===0
+  ){
+
+    title =
+      'Sin ciclos H₁ detectables';
+
+    text =
+      'La representación elegida no produjo clases H₁ '+
+      'con persistencia positiva dentro del rango de filtración.';
+
+  }
+  else if(
+    max > .25 &&
+    loop > .20
+  ){
+
+    title =
+      'Alta estructura cíclica';
+
+    text =
+      'La nube presenta ciclos H₁ relativamente persistentes. '+
+      'Es un candidato interesante para comparar con otras partituras.';
+
+  }
+  else if(
+    max > .10
+  ){
+
+    title =
+      'Estructura cíclica moderada';
+
+    text =
+      'Existen ciclos persistentes, pero su estabilidad topológica '+
+      'es menor que en una estructura fuertemente cíclica.';
+
+  }
+  else{
+
+    title =
+      'Estructura cíclica débil';
+
+    text =
+      'Aparecen ciclos H₁, aunque con persistencia relativamente corta.';
+
+  }
+
+
+  $('classTitle').textContent =
+    title;
+
+  $('classText').textContent =
+    text;
+
+}
+
+
+/* ================================================================
+   EXPORTACIÓN
+   ================================================================ */
+
+$('btnJson').addEventListener(
+  'click',
+  () => {
+
+    if(!TDA_RESULT)
+      return;
+
+
+    const output={
+
+      schema:
+        'TopoLab-TDA-1.0',
+
+      meta:{
+
+        exportedAt:
+          new Date().toISOString(),
+
+        source:
+          $('o_file').textContent,
+
+        scoreMeta:
+          SCORE_DATA
+            ? SCORE_DATA.meta
+            : null
+
+      },
+
+
+      params:
+        TDA_RESULT.params,
+
+
+      normalization:{
+
+        mins:
+          NORMALIZATION.mins,
+
+        maxs:
+          NORMALIZATION.maxs
+
+      },
+
+
+      descriptors:
+        TDA_RESULT.descriptors,
+
+
+      betti:
+        TDA_RESULT.betti,
+
+
+      pairs:
+        TDA_RESULT.pairs.map(
+          ([d,b,death])=>[
+
+            d,
+
+            Number(
+              b.toFixed(8)
+            ),
+
+            Number.isFinite(death)
+              ? Number(
+                  death.toFixed(8)
+                )
+              : null
+
+          ]
+        )
+
+    };
+
+
+    const blob =
+      new Blob(
+        [
+          JSON.stringify(
+            output,
+            null,
+            2
+          )
+        ],
+        {
+          type:
+            'application/json'
+        }
+      );
+
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+
+    const a =
+      document.createElement('a');
+
+
+    a.href=url;
+
+    a.download =
+      'topolab_' +
+      new Date()
+        .toISOString()
+        .replace(
+          /[:.]/g,
+          '-'
+        ) +
+      '.json';
+
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+
+    setTimeout(
+      () =>
+        URL.revokeObjectURL(url),
+      2000
+    );
+
+  }
+);
+
+
+/* ================================================================
+   CAMBIO DE ESPACIO
+   ================================================================ */
+
+$('spaceMode').addEventListener(
+  'change',
+  () => {
+
+    if(!RAW_ROWS.length)
+      return;
+
+
+    TDA_RESULT=null;
+
+    $('btnJson').disabled=true;
+
+    drawCloud();
+
+    setStatus(
+      'Espacio cambiado. Ejecuta TDA nuevamente.',
+      ''
+    );
+
+  }
+);
+
+
+/* ================================================================
+   LOCAL STORAGE
+   ================================================================ */
+
+try{
+
+  const cached =
+    localStorage.getItem(
+      'lissajous_score_last'
+    );
+
+
+  if(cached){
+
+    const obj =
+      JSON.parse(cached);
+
+
+    if(
+      obj &&
+      Array.isArray(obj.cells)
+    ){
+
+      loadScore(
+        obj,
+        'localStorage'
+      );
+
     }
 
-    // ==========================================
-    // 6. EVENTOS DE UI Y CONTROL
-    // ==========================================
-    function updateScoreUI() {
-      const container = document.getElementById('cellContainer');
-      document.getElementById('nodeCountBadge').innerText = `${SCORE.cells.length} Nodos`;
+  }
 
-      if (SCORE.cells.length === 0) {
-        container.innerHTML = `<div style="color: var(--text-dim); text-align: center; font-size: 0.8rem; padding: 10px;">
-          La partitura está vacía. Añade nodos armónicos o carga la configuración de prueba.
-        </div>`;
-        return;
-      }
+}
+catch(e){
 
-      container.innerHTML = SCORE.cells.map((c, i) => `
-        <div class="cell-item">
-          <span><strong>#${i + 1}</strong> [a:${c.p.a}, b:${c.p.b}, δ:${c.p.delta}π]</span>
-          <span>Ax:${c.p.Ax} | Ay:${c.p.Ay} | D:${c.D}s</span>
-        </div>
-      `).join('');
-    }
+  console.warn(
+    'No se pudo cargar localStorage',
+    e
+  );
 
-    document.getElementById('btnAddNode').addEventListener('click', () => {
-      initAudio();
-      const a = parseFloat(document.getElementById('inputA').value) || 1;
-      const b = parseFloat(document.getElementById('inputB').value) || 1;
-      const delta = parseFloat(document.getElementById('inputDelta').value) || 0;
-      const Ax = parseFloat(document.getElementById('inputAx').value) || 1;
-      const Ay = parseFloat(document.getElementById('inputAy').value) || 1;
-      const D = parseFloat(document.getElementById('inputDuration').value) || 1.5;
+}
 
-      SCORE.addCell({
-        p: { a, b, delta, Ax, Ay, E: 0 },
-        D: D
-      });
-
-      updateScoreUI();
-    });
-
-    document.getElementById('btnClearScore').addEventListener('click', () => {
-      SCORE.clear();
-      updateScoreUI();
-      drawBarcodes([], 1.2);
-      updateBettiSummary([], 1.2);
-    });
-
-    document.getElementById('btnPreset').addEventListener('click', () => {
-      initAudio();
-      SCORE.clear();
-      // Partitura de prueba con relaciones armónicas simétricas
-      const presetData = [
-        { a: 1, b: 2, delta: 0.0, Ax: 1.0, Ay: 1.0, D: 2.0 },
-        { a: 2, b: 3, delta: 0.25, Ax: 0.9, Ay: 1.1, D: 1.8 },
-        { a: 3, b: 4, delta: 0.5, Ax: 1.1, Ay: 0.9, D: 1.5 },
-        { a: 3, b: 5, delta: 0.75, Ax: 0.8, Ay: 1.2, D: 2.2 },
-        { a: 4, b: 5, delta: 1.0, Ax: 1.2, Ay: 0.8, D: 1.2 },
-        { a: 5, b: 6, delta: 1.25, Ax: 1.0, Ay: 1.0, D: 1.6 },
-        { a: 5, b: 7, delta: 1.5, Ax: 0.7, Ay: 1.3, D: 2.5 },
-        { a: 7, b: 9, delta: 1.75, Ax: 1.3, Ay: 0.7, D: 1.9 }
-      ];
-
-      presetData.forEach(p => {
-        SCORE.addCell({ p: { a: p.a, b: p.b, delta: p.delta, Ax: p.Ax, Ay: p.Ay, E: 0 }, D: p.D });
-      });
-
-      updateScoreUI();
-      triggerTDAComputation();
-    });
-
-    function triggerTDAComputation() {
-      const points = extractNormalizedPointCloud(SCORE.toJSON());
-      if (points.length < 2) {
-        alert('Se requieren al menos 2 nodos en la partitura para ejecutar TDA.');
-        return;
-      }
-
-      const maxDim = parseInt(document.getElementById('selectMaxDim').value) || 2;
-      const maxDist = parseFloat(document.getElementById('inputMaxDist').value) || 1.2;
-
-      document.getElementById('statusIndicator').innerText = 'Calculando...';
-      tdaWorker.postMessage({ points, maxDim, maxDist, homDim: 1 });
-    }
-
-    document.getElementById('btnComputeTDA').addEventListener('click', triggerTDAComputation);
-
-    document.getElementById('btnAudioToggle').addEventListener('click', () => {
-      initAudio();
-      if (audioCtx) {
-        const btn = document.getElementById('btnAudioToggle');
-        btn.innerText = audioCtx.state === 'running' ? '🔊 Audio Activo' : '🔇 Audio Inactivo';
-      }
-    });
-
-    // Inicializar loop animación
-    renderLissajous();
-  </script>
+</script>
 
 </body>
 </html>

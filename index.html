@@ -31,7 +31,7 @@ body.day{
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;font-family:"JetBrains Mono","SFMono-Regular",Consolas,monospace;background:var(--bg);color:var(--text)}
 body{
-  display:grid;place-items:center;overflow:hidden;
+  display:grid;place-items:center;overflow:auto;
   background-image:
     linear-gradient(var(--grid) 1px,transparent 1px),
     linear-gradient(90deg,var(--grid) 1px,transparent 1px);
@@ -121,18 +121,25 @@ footer{display:flex;justify-content:space-between;margin-top:55px;padding-top:17
 
   <section class="grid" aria-label="Instrumentos">
     <a class="card" href="Lissajous_Lab.html">
-      <div class="number">01 / ANALYSIS</div>
+      <div class="number">01 / PARAMETRIZACIÓN Y DESCOMPOSICIÓN</div>
       <h2>Lissajous Lab</h2>
       <p>Analiza el sonido, recupera relaciones frecuenciales y observa cómo se transforman en geometría de Lissajous.</p>
       <span class="enter">OPEN LAB →</span>
     </a>
 
     <a class="card" href="STROMA_Player.html">
-      <div class="number">02 / SYNTHESIS</div>
+      <div class="number">02 / DECOMPOSICIÓN Y RECONSTRUCCIÓN</div>
       <h2>STROMA Player</h2>
       <p>Interpreta una partitura JSON como secuencia temporal de estados sonoros y variaciones geométricas.</p>
       <span class="enter">OPEN PLAYER →</span>
     </a>
+  
+    <a class="card" href="TDA.html">
+      <div class="number">03 / PERSISTENCIA TOPOLOGICA</div>
+      <h2>TDA</h2>
+      <p>Explora la estructura topológica de los datos sonoros y su evolución en el tiempo.</p>
+      <span class="enter">OPEN LAB →</span>
+    </a>   
   </section>
 
   <footer>
